@@ -69,8 +69,12 @@ osx.kivy_version = 1.9.1
 
 #
 # Android specific
-#
 
+
+android.release_keystore = "C:/Users/Abhishek sharma/Downloads/myapp.keystore"
+android.release_store_password = key@123
+android.release_key_alias = key0
+android.release_key_password = key@123
 # (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
