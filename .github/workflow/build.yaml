@@ -1,0 +1,72 @@
+name: Build and Sign APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          autoconf automake libtool pkg-config \
+          zlib1g-dev libncurses5-dev libssl-dev \
+          git unzip
+
+    - name: Install Buildozer
+      run: pip install buildozer
+
+    - name: Build unsigned APK
+      run: |
+        buildozer -v android release
+        mv bin/*-release-unsigned.apk app-unsigned.apk
+
+    - name: Sign APK (Release)
+      if: github.ref == 'refs/heads/main'
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASS: ${{ secrets.KEY_PASS }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+        jarsigner -verbose \
+          -keystore release.keystore \
+          -storepass "$KEYSTORE_PASS" \
+          -keypass "$KEY_PASS" \
+          -sigalg SHA256withRSA \
+          -digestalg SHA-256 \
+          app-unsigned.apk \
+          "$KEY_ALIAS"
+        mv app-unsigned.apk UniversalVideoDownloader-signed.apk
+
+    - name: Zipalign (Release)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        $ANDROID_HOME/build-tools/34.0.0/zipalign \
+          -v 4 \
+          UniversalVideoDownloader-signed.apk \
+          UniversalVideoDownloader-aligned.apk
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: APK
+        path: |
+          app-unsigned.apk
+          *.apk
