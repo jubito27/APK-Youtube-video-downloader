@@ -1,4 +1,5 @@
 [app]
+android.sdk_path = /home/runner/android-sdk
 
 # (str) Title of your application
 title = Youtube Video Downloader
