@@ -12,85 +12,92 @@ jobs:
     timeout-minutes: 30
 
     steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-        - name: Set up Python 
-          uses: actions/setup-python@v4
-          with:
-            python-version: '3.9'
+    - name: Set up Python 
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-        - name: Install Cython
-          run: pip install cython
+    - name: Install Cython
+      run: pip install cython
 
-        - name: Download Android SDK Command Line Tools
-          run: |
-            mkdir -p $HOME/android-sdk/cmdline-tools
-            cd $HOME/android-sdk/cmdline-tools
-            wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-            unzip tools.zip
-            mkdir -p latest
-            mv cmdline-tools/* latest/
-            rm -rf cmdline-tools tools.zip
+    - name: Download Android SDK Command Line Tools
+      run: |
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+        unzip tools.zip
+        mkdir -p latest
+        mv cmdline-tools/* latest/
+        rm -rf cmdline-tools tools.zip
 
-        - name: Set up ANDROID_HOME and add tools to PATH
-          run: |
-            echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-            echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-            echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-            echo "$HOME/android-sdk/build-tools" >> $GITHUB_PATH
+    - name: Set up ANDROID_HOME and add tools to PATH
+      run: |
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+        echo "$HOME/android-sdk/build-tools" >> $GITHUB_PATH
 
-        - name: Install system dependencies
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y \
-              autoconf automake libtool pkg-config \
-              zlib1g-dev libncurses5-dev libssl-dev \
-              git unzip
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          autoconf automake libtool pkg-config \
+          zlib1g-dev libncurses5-dev libssl-dev \
+          git unzip openjdk-17-jdk
 
-        - name: Install SDK components
-          run: |
-            yes | sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-        
-        - name: Install Buildozer
-          run: pip install buildozer
+    - name: Install SDK components
+      run: |
+        yes | sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-        - name: Build unsigned APK
-          run: |
-            buildozer -v android release
-            mv bin/*-release-unsigned.apk app-unsigned.apk
+    - name: Install Buildozer
+      run: pip install buildozer
 
-        - name: Sign APK (Release)
-          if: github.ref == 'refs/heads/main'
-          env:
-            KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-            KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
-            KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-            KEY_PASS: ${{ secrets.KEY_PASS }}
-          run: |
-            echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
-            jarsigner -verbose \
-            -keystore release.keystore \
-            -storepass "$KEYSTORE_PASS" \
-            -keypass "$KEY_PASS" \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            app-unsigned.apk \
-            "$KEY_ALIAS"
-            mv app-unsigned.apk UniversalVideoDownloader-signed.apk
+    - name: Set Buildozer to use preinstalled SDK
+      run: |
+        echo "[app]" > buildozer.spec.override
+        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec.override
+        cat buildozer.spec >> buildozer.spec.override
+        mv buildozer.spec.override buildozer.spec
 
-        - name: Zipalign (Release)
-          if: github.ref == 'refs/heads/main'
-          run: |
-            $ANDROID_HOME/build-tools/34.0.0/zipalign \
-              -v 4 \
-              UniversalVideoDownloader-signed.apk \
-              UniversalVideoDownloader-aligned.apk
+    - name: Build unsigned APK
+      run: |
+        buildozer -v android release
+        mv bin/*-release-unsigned.apk app-unsigned.apk
 
-        - name: Upload Artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: APK
-            path: |
-              app-unsigned.apk
-              *.apk
+    - name: Sign APK (Release)
+      if: github.ref == 'refs/heads/main'
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASS: ${{ secrets.KEY_PASS }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+        jarsigner -verbose \
+          -keystore release.keystore \
+          -storepass "$KEYSTORE_PASS" \
+          -keypass "$KEY_PASS" \
+          -sigalg SHA256withRSA \
+          -digestalg SHA-256 \
+          app-unsigned.apk \
+          "$KEY_ALIAS"
+        mv app-unsigned.apk UniversalVideoDownloader-signed.apk
+
+    - name: Zipalign (Release)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        $ANDROID_HOME/build-tools/34.0.0/zipalign \
+          -v 4 \
+          UniversalVideoDownloader-signed.apk \
+          UniversalVideoDownloader-aligned.apk
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: APK
+        path: |
+          app-unsigned.apk
+          *.apk
