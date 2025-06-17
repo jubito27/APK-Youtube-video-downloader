@@ -1,112 +1,28 @@
-name: Build Android APK
+- name: Set up Android SDK
+  run: |
+    # Create the correct directory structure
+    mkdir -p $HOME/android-sdk/cmdline-tools/latest
+    cd $HOME/android-sdk/cmdline-tools
+    wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+    unzip commandlinetools-linux-11076708_latest.zip
+    # Move contents directly into 'latest' (critical step!)
+    mv cmdline-tools/* latest/
+    rm -rf cmdline-tools commandlinetools-linux-11076708_latest.zip
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    # Verify sdkmanager exists
+    ls -la $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+- name: Set up environment variables
+  run: |
+    echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+    echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+    echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+- name: Accept Android licenses
+  run: |
+    yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          autoconf automake libtool pkg-config \
-          zlib1g-dev libncurses5-dev libssl-dev libffi-dev \
-          git unzip openjdk-17-jdk
-
-    - name: Set up Java
-      run: |
-        echo "$JAVA_HOME/bin" >> $GITHUB_PATH
-
-    - name: Set up Android SDK
-      run: |
-        # Create correct directory structure
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip
-        mv cmdline-tools latest  # This is the critical fix
-        rm commandlinetools-linux-11076708_latest.zip
-
-    - name: Set up environment
-      run: |
-        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-        echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-
-    - name: Accept licenses
-      run: |
-        yes | sdkmanager --licenses
-
-    - name: Install SDK components
-      run: |
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
-        echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
-
-    - name: Verify installation
-      run: |
-        sdkmanager --list
-        ls -la $ANDROID_SDK_ROOT
-
-    - name: Install Buildozer and dependencies
-      run: |
-        pip install buildozer cython
-
-    - name: Update buildozer.spec
-      run: |
-        sed -i "s|android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
-        echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
-
-    - name: Build unsigned APK
-      run: |
-        buildozer -v android release
-        mv bin/*-release-unsigned.apk app-unsigned.apk
-
-    - name: Sign APK (Release)
-      if: github.ref == 'refs/heads/main'
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASS: ${{ secrets.KEY_PASS }}
-      run: |
-        echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
-        jarsigner -verbose \
-          -keystore release.keystore \
-          -storepass "$KEYSTORE_PASS" \
-          -keypass "$KEY_PASS" \
-          -sigalg SHA256withRSA \
-          -digestalg SHA-256 \
-          app-unsigned.apk \
-          "$KEY_ALIAS"
-        mv app-unsigned.apk UniversalVideoDownloader-signed.apk
-
-    - name: Zipalign (Release)
-      if: github.ref == 'refs/heads/main'
-      run: |
-        $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign \
-          -v 4 \
-          UniversalVideoDownloader-signed.apk \
-          UniversalVideoDownloader-aligned.apk
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: APK
-        path: |
-          app-unsigned.apk
-          *.apk
+- name: Install Android tools
+  run: |
+    $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+    echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
