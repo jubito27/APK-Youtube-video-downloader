@@ -1,4 +1,4 @@
-name: Build and Sign APK
+name: Build android APK
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.9
+    - name: Set up Python 
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
