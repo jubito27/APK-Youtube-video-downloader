@@ -20,6 +20,9 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: Install Cython
+      run: pip install cython
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
