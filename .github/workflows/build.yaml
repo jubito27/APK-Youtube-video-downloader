@@ -37,10 +37,10 @@ jobs:
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools/latest
         cd $HOME/android-sdk/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip
+        wget https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip
+        unzip commandlinetools-win-13114758_latest.zip
         mv cmdline-tools/* latest/
-        rm -rf cmdline-tools commandlinetools-linux-11076708_latest.zip
+        rm -rf cmdline-tools commandlinetools-win-13114758_latest.zip
         ls -la $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager
 
     - name: Set up environment
