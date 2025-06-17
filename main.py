@@ -1,71 +1,106 @@
 from kivymd.app import MDApp # type: ignore
 from kivymd.uix.screen import MDScreen # type: ignore
 from kivymd.uix.button import MDRaisedButton # type: ignore
-from kivymd.uix.textfield import MDTextField # type: ignore
-from kivymd.uix.dialog import MDDialog # type: ignore
-from kivymd.uix.boxlayout import MDBoxLayout # type: ignore
-from kivymd.uix.label import MDLabel # type: ignore
-from kivymd.uix.progressbar import MDProgressBar # type: ignore
-from kivy.clock import Clock # type: ignore 
-from kivy.utils import platform # type: ignore
-from kivy.properties import StringProperty # type: ignore
-import yt_dlp # type: ignore
+from kivymd.uix.textfield import MDTextField# type: ignore
+from kivymd.uix.dialog import MDDialog# type: ignore
+from kivymd.uix.boxlayout import MDBoxLayout# type: ignore
+from kivymd.uix.label import MDLabel# type: ignore
+from kivymd.uix.progressbar import MDProgressBar# type: ignore
+from kivy.clock import Clock# type: ignore
+from kivy.utils import platform# type: ignore
+from kivy.properties import StringProperty# type: ignore
+import yt_dlp# type: ignore
 import os
-import glob
 import threading
 from pathlib import Path
+
+# Android-specific imports
+if platform == 'android':
+    from android.permissions import request_permissions, Permission# type: ignore
+    from android.storage import primary_external_storage_path# type: ignore
+    from jnius import autoclass# type: ignore
 
 class YouTubeDownloader(MDApp):
     download_status = StringProperty("")
     
     def build(self):
+        # Request Android permissions
+        if platform == 'android':
+            request_permissions([Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE])
+        
+        # KivyMD Dark Theme Setup
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Teal"
         self.theme_cls.accent_palette = "Amber"
         
+        # UI Layout
         self.screen = MDScreen()
         self.layout = MDBoxLayout(
             orientation="vertical",
             padding="40dp",
             spacing="20dp",
             pos_hint={"center_x": 0.5, "center_y": 0.5},
-            size_hint=(0.8, 0.8))
+            size_hint=(0.8, 0.8)
+        )
         
+        # Title Label
         self.title_label = MDLabel(
-            text="YouTube Video Downloader",
+            text="Video Downloader",
             halign="center",
             font_style="H4",
-            theme_text_color="Primary")
+            theme_text_color="Primary"
+        )
         
+        # Description label
+        self.desc_label = MDLabel(
+            text="Download any kind of  Youtube videos with one click without any signin or signup",
+            halign="center",
+            font_style="Subtitle1",
+            theme_text_color="Secondary",
+            size_hint_y=None,
+            height="60dp"
+        )
+        
+        
+        # URL Input Field
         self.url_input = MDTextField(
             hint_text="Enter YouTube video link",
             mode="rectangle",
             size_hint_x=0.9,
             pos_hint={"center_x": 0.5},
             helper_text="Example: https://youtu.be/L5CV53wCW00",
-            helper_text_mode="persistent")
+            helper_text_mode="persistent"
+        )
         
+        # Download Button
         self.download_btn = MDRaisedButton(
             text="Download",
             pos_hint={"center_x": 0.5},
             size_hint_x=0.5,
-            md_bg_color=self.theme_cls.primary_color)
+            md_bg_color=self.theme_cls.primary_color
+        )
         self.download_btn.bind(on_release=self.start_download)
         
+        # Progress Bar
         self.progress_bar = MDProgressBar(
             type="indeterminate",
             pos_hint={"center_x": 0.5},
-            size_hint_x=0.9)
+            size_hint_x=0.9
+        )
         self.progress_bar.opacity = 0
         
+        # Status Label
         self.status_label = MDLabel(
             text=self.download_status,
             halign="center",
             theme_text_color="Secondary",
             size_hint_y=None,
-            height="30dp")
+            height="30dp"
+        )
         
+        # Add widgets to layout
         self.layout.add_widget(self.title_label)
+        self.layout.add_widget(self.desc_label)
         self.layout.add_widget(self.url_input)
         self.layout.add_widget(self.download_btn)
         self.layout.add_widget(self.progress_bar)
@@ -75,34 +110,57 @@ class YouTubeDownloader(MDApp):
         return self.screen
     
     def get_downloads_folder(self):
-        """Returns the system's default downloads folder path"""
-        if platform == 'win':
+        """Returns the correct Downloads folder for Android, Windows, Linux, or Mac."""
+        if platform == 'android':
+            downloads_path = os.path.join(primary_external_storage_path(), 'Download')
+            if not os.path.exists(downloads_path):
+                os.makedirs(downloads_path)
+            return downloads_path
+        elif platform == 'win':
             import ctypes
             from ctypes import windll, wintypes
-            CSIDL_PERSONAL = 5  # My Documents
-            CSIDL_DOWNLOADS = 0x0011  # Downloads
-            
+            CSIDL_DOWNLOADS = 0x0011
             buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
             ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_DOWNLOADS, None, 0, buf)
             return buf.value
-        elif platform == 'linux':
+        else:  # Linux/Mac
             return str(Path.home() / "Downloads")
-        elif platform == 'macosx':
-            return str(Path.home() / "Downloads")
-        else:
-            return str(Path.home())  # Fallback to home directory
     
     def start_download(self, instance):
         url = self.url_input.text.strip()
-        if not url:
-            self.show_dialog("Error", "Please enter a YouTube link.")
-            return
         
+        # Check if URL is empty
+        if not url:
+            self.show_dialog("Error", "Please enter a video link.")
+            return
+            
+        # Validate YouTube URL
+        if not self.is_valid_youtube_url(url):
+            self.show_dialog("Invalid Link", "Please enter a valid Video URL.\n\nExamples:\nhttps://youtu.be/dQw4w9WgXcQ\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ/nhttps://www.instagram.com/reel/DKOUYSPSX49/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==\nhttps://x.com/elonmusk/status/1234567890123456789\nhttps://www.facebook.com/watch?v=1234567890123456789")
+            return 
+        
+        # Proceed with download if valid
         self.progress_bar.opacity = 1
         self.progress_bar.start()
         self.download_btn.disabled = True
         self.update_status("Starting download...")
         
+        threading.Thread(target=self.download_video, args=(url,)).start()
+
+    def is_valid_youtube_url(self, url):
+        """Check if the URL is a valid YouTube URL"""
+        youtube_domains = [
+            'www',
+            'http',
+            'https',
+        
+        ]
+        
+        # Basic check for YouTube domains
+        if not any(domain in url for domain in youtube_domains):
+            return False
+        
+        # Run download in a background thread
         threading.Thread(target=self.download_video, args=(url,)).start()
     
     def download_video(self, url):
@@ -114,12 +172,18 @@ class YouTubeDownloader(MDApp):
                 'format': 'best',
                 'outtmpl': output_template,
                 'progress_hooks': [self.progress_hook],
+                'quiet': True,
+                'no_warnings': True,
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 self.update_status("Downloading video...")
                 info = ydl.extract_info(url, download=True)
                 filename = ydl.prepare_filename(info)
+                
+                # Show Android notification when done
+                if platform == 'android':
+                    self.show_android_notification("Download Complete", os.path.basename(filename))
                 
                 self.update_status(f"Download complete: {os.path.basename(filename)}")
                 Clock.schedule_once(lambda dt: self.show_download_complete(filename))
@@ -129,6 +193,23 @@ class YouTubeDownloader(MDApp):
             Clock.schedule_once(lambda dt: self.show_dialog("Error", f"Download failed: {str(e)}"))
         finally:
             Clock.schedule_once(self.reset_ui)
+    
+    def show_android_notification(self, title, message):
+        """Shows a native Android notification when download is complete."""
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Context = autoclass('android.content.Context')
+        NotificationManager = autoclass('android.app.NotificationManager')
+        NotificationBuilder = autoclass('android.app.Notification$Builder')
+        
+        notification_service = PythonActivity.mActivity.getSystemService(Context.NOTIFICATION_SERVICE)
+        
+        builder = NotificationBuilder(PythonActivity.mActivity)\
+            .setContentTitle(title)\
+            .setContentText(message)\
+            .setSmallIcon(PythonActivity.mActivity.getApplicationInfo().icon)\
+            .setAutoCancel(True)
+        
+        notification_service.notify(0, builder.build())
     
     def progress_hook(self, d):
         if d['status'] == 'downloading':
@@ -144,8 +225,8 @@ class YouTubeDownloader(MDApp):
     def show_download_complete(self, file_path):
         filename = os.path.basename(file_path)
         self.dialog = MDDialog(
-            title="Download Complete!",
-            text=f"Video saved to your Downloads folder:\n{filename}",
+            title="✅ Download Complete!",
+            text=f"Video saved to:\n{filename}",
             buttons=[
                 MDRaisedButton(
                     text="OK",
@@ -167,6 +248,16 @@ class YouTubeDownloader(MDApp):
             os.system(f'xdg-open "{downloads_folder}"')
         elif platform == 'macosx':
             os.system(f'open "{downloads_folder}"')
+        elif platform == 'android':
+            # Android requires an Intent to open Downloads
+            Intent = autoclass('android.content.Intent')
+            Uri = autoclass('android.net.Uri')
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(Uri.parse("file://" + downloads_folder), "resource/folder")
+            PythonActivity.mActivity.startActivity(intent)
+        
         self.dialog.dismiss()
     
     def reset_ui(self, dt=None):
