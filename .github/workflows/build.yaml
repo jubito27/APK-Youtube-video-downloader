@@ -20,10 +20,19 @@ jobs:
       with:
         python-version: '3.9'
 
-    - name: Install Cython
-      run: pip install cython
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          autoconf automake libtool pkg-config \
+          zlib1g-dev libncurses5-dev libssl-dev libffi-dev \
+          git unzip openjdk-17-jdk
 
-    - name: Download Android SDK Command Line Tools
+    - name: Set up Java
+      run: |
+        echo "$JAVA_HOME/bin" >> $GITHUB_PATH
+
+    - name: Download Android SDK
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk/cmdline-tools
@@ -33,34 +42,28 @@ jobs:
         mv cmdline-tools/* latest/
         rm -rf cmdline-tools tools.zip
 
-    - name: Set up ANDROID_HOME and add tools to PATH
+    - name: Set up Android environment
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-        echo "$HOME/android-sdk/build-tools" >> $GITHUB_PATH
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          autoconf automake libtool pkg-config \
-          zlib1g-dev libncurses5-dev libssl-dev \
-          git unzip openjdk-17-jdk
 
     - name: Install SDK components
       run: |
-        yes | sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        yes | sdkmanager --sdk_root=$HOME/android-sdk \
+          "platform-tools" \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "ndk;25.2.9519653"
+        echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
 
-    - name: Install Buildozer
-      run: pip install buildozer
-
-    - name: Set Buildozer to use preinstalled SDK
+    - name: Install Buildozer and dependencies
       run: |
-        echo "[app]" > buildozer.spec.override
-        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec.override
-        cat buildozer.spec >> buildozer.spec.override
-        mv buildozer.spec.override buildozer.spec
+        pip install buildozer cython
+
+    - name: Update buildozer.spec with SDK path
+      run: |
+        sed -i "s|android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
 
     - name: Build unsigned APK
       run: |
