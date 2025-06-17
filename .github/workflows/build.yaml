@@ -23,6 +23,10 @@ jobs:
     - name: Install Cython
       run: pip install cython
 
+    - name: Install Android SDK Build Tools
+      run: |
+        yes | sdkmanager "build-tools;34.0.0"
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
