@@ -32,14 +32,17 @@ jobs:
     - name: Set up Android SDK
       run: |
         # 1. Create proper directory structure
-        mkdir -p $HOME/android-sdk/cmdline-tools
+        mkdir -p $HOME/android-sdk/cmdline-tools/latest
         cd $HOME/android-sdk/cmdline-tools
         
         # 2. Download and extract tools (Linux version)
         wget https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
-        unzip commandlinetools-linux-13114758_latest.zip
+        unzip commandlinetools-linux-13114758_latest.zip -d latest
         mv cmdline-tools latest
-        rm commandlinetools-linux-13114758_latest.zip
+        rm commandlinetools-linux-13114758_latest.
+
+        ls -la $HOME/android-sdk/cmdline-tools/latest/bin/
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --list || true
         
         # 3. Set environment variables
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
