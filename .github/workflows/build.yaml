@@ -103,6 +103,15 @@ jobs:
         buildozer -v android release
         mv bin/*-release-unsigned.apk app-unsigned.apk || true
 
+    - name: List bin directory contents
+      run: ls -l bin/
+    
+    - name: Move generated APK to known location (if exists)
+      run: |
+        if ls bin/*release-unsigned.apk 1> /dev/null 2>&1; then
+          mv bin/*release-unsigned.apk app-unsigned.apk
+        fi
+
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
