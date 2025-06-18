@@ -28,104 +28,42 @@ jobs:
           zlib1g-dev libncurses5-dev libssl-dev libffi-dev \
           git unzip openjdk-17-jdk
 
-    - name: Set up Java
-      run: |
-        echo "$JAVA_HOME/bin" >> $GITHUB_PATH
-
-    # ===== FIXED ANDROID SDK SETUP =====
+    # ===== AUTOMATIC LINUX SDK SETUP =====
     - name: Set up Android SDK
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools/latest
-        cd $HOME/android-sdk/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip
-        unzip commandlinetools-win-13114758_latest.zip
-        mv cmdline-tools/* latest/
-        rm -rf cmdline-tools commandlinetools-win-13114758_latest.zip
-        ls -la $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager
-                - name: Setup Go environment
-        uses: actions/setup-go@v5.5.0
-        with:
-          # The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks.
-          go-version: # optional
-          # Path to the go.mod or go.work file.
-          go-version-file: # optional
-          # Set this option to true if you want the action to always check for the latest available version that satisfies the version spec
-          check-latest: # optional
-          # Used to pull Go distributions from go-versions. Since there's a default, this is typically not supplied by the user. When running this action on github.com, the default value is sufficient. When running on GHES, you can pass a personal access token for github.com if you are experiencing rate limiting.
-          token: # optional, default is ${{ github.server_url == 'https://github.com' && github.token || '' }}
-          # Used to specify whether caching is needed. Set to true, if you'd like to enable caching.
-          cache: # optional, default is true
-          # Used to specify the path to a dependency file - go.sum
-          cache-dependency-path: # optional            # Target architecture for Go to use. Examples: x86, x64. Will use system architecture by default.
-          architecture: # optional
+        mkdir -p ~/android-sdk/cmdline-tools
+        cd ~/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip commandlinetools-linux-11076708_latest.zip -d latest
+        rm commandlinetools-linux-11076708_latest.zip
 
-          
-          
-    - name: Set up environment
-      run: |
-        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-        echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+        echo "ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
+        echo "~/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
     - name: Accept licenses
       run: |
-        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-    - name: Install SDK components
+    - name: Install Android tools
       run: |
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+        ~/android-sdk/cmdline-tools/latest/bin/sdkmanager \
           "platform-tools" \
           "platforms;android-34" \
           "build-tools;34.0.0" \
           "ndk;25.2.9519653"
-        echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
-    # ===== END FIXED SECTION =====
+    # ===== END SDK SETUP =====
 
     - name: Install Buildozer
       run: |
         pip install buildozer cython
 
-    - name: Update buildozer.spec
-      run: |
-        sed -i "s|android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
-        echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
-
-    - name: Build unsigned APK
+    - name: Build APK
       run: |
         buildozer -v android release
-        mv bin/*-release-unsigned.apk app-unsigned.apk
+        mv bin/*.apk app-unsigned.apk
 
-    - name: Sign APK (Release)
-      if: github.ref == 'refs/heads/main'
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASS: ${{ secrets.KEY_PASS }}
-      run: |
-        echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
-        jarsigner -verbose \
-          -keystore release.keystore \
-          -storepass "$KEYSTORE_PASS" \
-          -keypass "$KEY_PASS" \
-          -sigalg SHA256withRSA \
-          -digestalg SHA-256 \
-          app-unsigned.apk \
-          "$KEY_ALIAS"
-        mv app-unsigned.apk UniversalVideoDownloader-signed.apk
-
-    - name: Zipalign (Release)
-      if: github.ref == 'refs/heads/main'
-      run: |
-        $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign \
-          -v 4 \
-          UniversalVideoDownloader-signed.apk \
-          UniversalVideoDownloader-aligned.apk
-
-    - name: Upload Artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: APK
-        path: |
-          app-unsigned.apk
-          *.apk
+        path: app-unsigned.apk
