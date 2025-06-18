@@ -37,7 +37,7 @@ jobs:
         
         # 2. Download and extract tools (Linux version)
         wget https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
-        unzip commandlinetools-linux-13114758_latest.zip -d latest
+        unzip commandlinetools-linux-13114758_latest.zip 
         mv cmdline-tools latest
         rm commandlinetools-linux-13114758_latest.
 
