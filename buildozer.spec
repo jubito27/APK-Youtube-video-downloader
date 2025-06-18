@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # Updated requirements
-requirements = python3,kivy==2.2.1,kivymd,yt-dlp,requests,android,libffi==local_path_to_custom_recipe
+requirements = python3,kivy==2.2.1,kivymd,yt-dlp,requests,android,libffi
 
 # Keystore (relative path or GitHub Secrets)
 android.release_keystore = keystore/myapp.keystore
