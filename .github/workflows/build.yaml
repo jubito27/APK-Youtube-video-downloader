@@ -36,10 +36,10 @@ jobs:
         cd $HOME/android-sdk/cmdline-tools
         
         # 2. Download and extract tools (Linux version)
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip
+        wget https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+        unzip commandlinetools-linux-13114758_latest.zip
         mv cmdline-tools latest
-        rm commandlinetools-linux-11076708_latest.zip
+        rm commandlinetools-linux-13114758_latest.zip
         
         # 3. Set environment variables
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
