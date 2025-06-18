@@ -111,15 +111,19 @@ jobs:
         if ls bin/*release-unsigned.apk 1> /dev/null 2>&1; then
           mv bin/*release-unsigned.apk app-unsigned.apk
         fi
-
-    - name: Upload APK Artifact
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: APK
-        path: |
-          app-unsigned.apk
-          bin/*.apk
-        if-no-files-found: warn
+        name: package
+        path: ./bin/*.apk
+    # - name: Upload APK Artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: APK
+    #     path: |
+    #       app-unsigned.apk
+    #       bin/*.apk
+    #     if-no-files-found: warn
         
 
         
