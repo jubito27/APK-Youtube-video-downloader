@@ -29,3 +29,6 @@ android.release_key_password = key@123
 # ✅ Use the latest stable python-for-android branch
 p4a.branch = develop
 # p4a.fork =  # Leave blank unless you have a custom fork
+
+[buildozer]
+build_dir = C:\Buildozer_Outputs
