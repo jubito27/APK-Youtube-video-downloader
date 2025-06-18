@@ -84,6 +84,7 @@ jobs:
     - name: Configure buildozer.spec
       run: |
         sed -i "s|^android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
+        sed -i "/^android.ndk_path =/d" buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
         sed -i "s|#p4a.branch = .*|p4a.branch = develop|g" buildozer.spec
 
