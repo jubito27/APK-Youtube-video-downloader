@@ -81,4 +81,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: APK
-        path: app-unsigned.apk
+        path: |
+          app-unsigned.apk
+          *.apk
