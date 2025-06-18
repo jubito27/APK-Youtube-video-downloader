@@ -34,7 +34,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          autoconf automake libtool pkg-config \
+          autoconf automake libtool pkg-config m4 \
+          libltdl-dev libtool-bin \
           zlib1g-dev libncurses5-dev libssl-dev libffi-dev \
           git unzip openjdk-17-jdk
 
@@ -87,6 +88,15 @@ jobs:
         sed -i "/^android.ndk_path =/d" buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
         sed -i "s|#p4a.branch = .*|p4a.branch = develop|g" buildozer.spec
+
+    - name: Prepare Autotools Environment
+      run: |
+        cd ~/.buildozer/android/platform/python-for-android  || true
+        if [ -d "recipes/libffi" ]; then
+          cd recipes/libffi
+          libtoolize --force --copy
+          autoreconf --install --force --verbose
+        fi
 
     - name: Build APK
       run: |
