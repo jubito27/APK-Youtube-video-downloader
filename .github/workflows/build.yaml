@@ -28,41 +28,56 @@ jobs:
           zlib1g-dev libncurses5-dev libssl-dev libffi-dev \
           git unzip openjdk-17-jdk
 
-    # ===== AUTOMATIC LINUX SDK SETUP =====
+    # ===== PROVEN ANDROID SDK SETUP =====
     - name: Set up Android SDK
       run: |
-        mkdir -p ~/android-sdk/cmdline-tools
-        cd ~/android-sdk/cmdline-tools
+        # 1. Create proper directory structure
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        
+        # 2. Download and extract tools (Linux version)
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip -d latest
+        unzip commandlinetools-linux-11076708_latest.zip
+        mv cmdline-tools latest
         rm commandlinetools-linux-11076708_latest.zip
+        
+        # 3. Set environment variables
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        
+        # 4. Verify installation
+        ls -la $HOME/android-sdk/cmdline-tools/latest/bin/
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --list
 
-        echo "ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
-        echo "~/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-    - name: Accept licenses
+    - name: Accept Android licenses
       run: |
-        yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-    - name: Install Android tools
+    - name: Install Android components
       run: |
-        ~/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
           "platform-tools" \
           "platforms;android-34" \
           "build-tools;34.0.0" \
           "ndk;25.2.9519653"
+        echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
     # ===== END SDK SETUP =====
 
     - name: Install Buildozer
       run: |
         pip install buildozer cython
 
-    - name: Build APK
+    - name: Update buildozer.spec
+      run: |
+        sed -i "s|android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
+        echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
+
+    - name: Build unsigned APK
       run: |
         buildozer -v android release
-        mv bin/*.apk app-unsigned.apk
+        mv bin/*-release-unsigned.apk app-unsigned.apk
 
-    - name: Upload APK
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: APK
