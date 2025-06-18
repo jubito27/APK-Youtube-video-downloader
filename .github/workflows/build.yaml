@@ -120,8 +120,6 @@ jobs:
           app-unsigned.apk
           bin/*.apk
         if-no-files-found: warn
-        compression-level: 6
-        overwrite: false
-        include-hidden-files: false
+        
 
         
