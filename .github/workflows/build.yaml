@@ -73,13 +73,19 @@ jobs:
     - name: Install Buildozer (latest)
       run: |
         pip install --upgrade pip
-        pip install cython
+        pip install cython==0.29.33
         pip install git+https://github.com/kivy/buildozer.git
 
     - name: Update buildozer.spec paths
       run: |
         sed -i "s|^android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
+
+    - name: Configure buildozer.spec
+      run: |
+        sed -i "s|^android.sdk_path = .*|android.sdk_path = $HOME/android-sdk|g" buildozer.spec
+        echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
+        sed -i "s|#p4a.branch = .*|p4a.branch = develop|g" buildozer.spec
 
     - name: Build APK
       run: |
