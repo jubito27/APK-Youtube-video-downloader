@@ -14,7 +14,7 @@ android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
 android.archs = arm64-v8a, armeabi-v7a
-android.release_artifact = apk  # Instead of aab
+android.release_artifact = apk  
 
 # ✅ Correct SDK/NDK paths (set in GitHub Actions)
 android.sdk_path = /home/runner/android-sdk
