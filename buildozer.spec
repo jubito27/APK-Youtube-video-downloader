@@ -5,7 +5,7 @@ package.name = youtube.videodownloader
 package.domain = org.jubito
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 1.0
+version = 0.1
 
 # Updated requirements
 requirements = python3,kivy==2.2.1,kivymd,yt-dlp,requests,android,libffi==local_path_to_custom_recipe
