@@ -88,7 +88,7 @@ jobs:
         sed -i "/^android.ndk_path =/d" buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
         sed -i "s|#p4a.branch = .*|p4a.branch = develop|g" buildozer.spec
-         grep -q "^android.ndk_path" buildozer.spec || echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
+        grep -q "^android.ndk_path" buildozer.spec || echo "android.ndk_path = $HOME/android-sdk/ndk/25.2.9519653" >> buildozer.spec
 
     - name: Prepare Autotools Environment
       run: |
@@ -112,19 +112,15 @@ jobs:
         if ls bin/*release-unsigned.apk 1> /dev/null 2>&1; then
           mv bin/*release-unsigned.apk app-unsigned.apk
         fi
-    - name: Upload artifacts
+    
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: APK
-        path: ./bin/*.apk
-    # - name: Upload APK Artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: APK
-    #     path: |
-    #       app-unsigned.apk
-    #       bin/*.apk
-    #     if-no-files-found: warn
+        path: |
+          app-unsigned.apk
+          bin/*.apk
+        if-no-files-found: warn
         
 
         
