@@ -30,5 +30,4 @@ android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653
 p4a.branch = develop
 # p4a.fork =  # Leave blank unless you have a custom fork
 
-[buildozer]
-build_dir = C:\Buildozer_Outputs
+
