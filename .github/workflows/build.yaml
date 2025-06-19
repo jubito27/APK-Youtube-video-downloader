@@ -102,7 +102,7 @@ jobs:
 
     - name: Build APK
       run: |
-        buildozer -v android release
+        buildozer -v android debug
     
 
     - name: List bin directory contents
