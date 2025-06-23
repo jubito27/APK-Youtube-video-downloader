@@ -7,7 +7,7 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # ✅ Cleaned and corrected requirements
-requirements = python3,kivy==2.2.1,kivymd,yt-dlp,requests,android,libffi
+requirements = python3,kivy==2.2.1,kivymd,yt-dlp,requests,android,libffi,ffpyplayer
 
 # ✅ Platform configuration
 android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
